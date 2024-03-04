@@ -186,7 +186,7 @@ if __name__ == "__main__":
             writer.add_scalar(f"{phase}/average_episode_reward", avg_reward, global_step)
 
     def stop_fn(mean_rewards):
-        return mean_rewards >= 1000
+        return mean_rewards >= 1500
 
     def train_fn(epoch, env_step):
         eps = max(0.1, 1 - epoch * 0.003)  # Example of linearly decreasing epsilon
@@ -210,7 +210,7 @@ if __name__ == "__main__":
         policy=policies,
         train_collector=train_collector,
         test_collector=test_collector,
-        max_epoch=500,
+        max_epoch=1000,
         step_per_epoch=1000,
         step_per_collect=50,
         episode_per_test=10,

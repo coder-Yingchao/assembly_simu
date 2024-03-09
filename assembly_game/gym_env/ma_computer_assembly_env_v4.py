@@ -44,8 +44,7 @@ class ComputerAssemblyMultiAgentEnv(ParallelEnv):
     def __init__(self,render_mode=None):
         super().__init__()  # Ensure proper initialization of base classes
         self.game = ComputerAssemblyGame()
-        self.agents = ["agent_1", "agent_2"]
-        self.agent_selection = "agent_2" # Initialize without selection
+        self.agents = ['agent_1', 'agent_2']
         self.possible_agents = self.agents[:]
         self.action_spaces = {agent: spaces.Discrete(11) for agent in self.agents}
         # Define observation space similarly, customized to your environment's needs
@@ -81,7 +80,7 @@ class ComputerAssemblyMultiAgentEnv(ParallelEnv):
     def reset(self, seed=None, options=None):
         self.current_step = 0
         # Reset the game to its initial state
-        self.game.reset_game(seed)  # Assuming reset_game doesn't need a seed. If it does, pass seed here.
+        # self.game.reset_game(seed)  # Assuming reset_game doesn't need a seed. If it does, pass seed here.
         observation = self._get_observation()
         observations = {
             a: (observation)

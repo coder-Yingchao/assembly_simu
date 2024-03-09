@@ -131,10 +131,17 @@ class ComputerAssemblyGame:
 
         self.update()
 
+
         return self.reward, self.terminated
     def hand1_operate (self):
-        self.hand_x, self.hand_y, step_made_1 = self.move_towards(
-            self.hand_x, self.hand_y, self.target_x1, self.target_y1, 'y')
+        while True:
+            self.hand_x, self.hand_y, step_made_1 = self.move_towards(
+                self.hand_x, self.hand_y, self.target_x1, self.target_y1, 'y')
+            self.total_step += 1
+            if step_made_1 == 0:
+                break
+
+
         if not step_made_1:
             if self.action_hand1 == 9:
                 self.handle_case_interaction(1)  # Special handling for the case
@@ -142,13 +149,20 @@ class ComputerAssemblyGame:
                 self.handover()
             elif 1 <= self.action_hand1 <= 8:
                 self.pick_up_component(self.action_hand1-1, 1)
+            if self.hand2_waiting_for_handover :
+                self.reward += self.fail_action_reward
             self.target_x1 = None
             self.target_y1 = None
             self.action_hand1 = None
         self.total_step += 1
     def hand2_operate(self):
-        self.second_hand_x, self.second_hand_y, step_made2 = self.move_towards(
-            self.second_hand_x, self.second_hand_y, self.target_x2, self.target_y2, 'y')
+        while True:
+            self.second_hand_x, self.second_hand_y, step_made2 = self.move_towards(
+                self.second_hand_x, self.second_hand_y, self.target_x2, self.target_y2, 'y')
+            self.total_step += 1
+            if step_made2 == 0:
+                break
+
         if not step_made2:
             if self.action_hand2 == 9:
                 self.handle_case_interaction(2)  # Special handling for the case
@@ -165,6 +179,7 @@ class ComputerAssemblyGame:
         #     comp.picked_up_by_hand1 = False
 
         for comp in self.components:
+            handoverflag  = False
             if comp.picked_up_by_hand2:
                 self.states[comp.type]['position'] = self.placement_positions[comp.type]
                 comp.x ,comp.y =  self.placement_positions[comp.type]
@@ -176,10 +191,13 @@ class ComputerAssemblyGame:
                 self.reward += self.assist_reward
                 leaf_node = self.find_leaf_by_name(self.root, comp.type)
                 result = leaf_node.complete()
+                handoverflag = True
 
                 if comp.type == '8.cover':
-                    self.reward = self.reward + self.completion_reward - self.total_step/10
+                    self.reward = self.reward + self.completion_reward
                     self.terminated = True
+        if not handoverflag :
+            self.reward += self.fail_action_reward
     def handle_case_interaction(self, hand_id):
         """
         hand1 assemble the object
@@ -187,6 +205,7 @@ class ComputerAssemblyGame:
         """
 
         if hand_id == 1:
+            assemble_flag = False
             for comp in self.components:
                 if comp.picked_up_by_hand1:
                     self.states[comp.type]['position'] = self.placement_positions[comp.type]
@@ -197,9 +216,13 @@ class ComputerAssemblyGame:
                     leaf_node = self.find_leaf_by_name(self.root, comp.type)
                     result = leaf_node.complete()
                     self.reward += self.assemble_success_reward
+                    assemble_flag = True
                     if comp.type == '8.cover':
                         self.reward = self.reward + self.completion_reward - self.total_step
                         self.terminated = True
+            if not assemble_flag:
+                self.reward += self.fail_action_reward
+
 
         else:
             if any(comp.picked_up_by_hand2 for comp in self.components):
@@ -220,6 +243,7 @@ class ComputerAssemblyGame:
                     leaf_node = self.find_leaf_by_name(self.root, comp.type)
                     leaf_node.drop()
                     self.states[comp.type]['state'] = 1
+                    self.reward += self.fail_action_reward
 
         else:
             for comp in self.components: # same to hand1, can't pick up two items.
@@ -228,6 +252,8 @@ class ComputerAssemblyGame:
                     leaf_node = self.find_leaf_by_name(self.root, comp.type)
                     leaf_node.drop()
                     self.states[comp.type]['state'] = 1
+                    self.reward += self.fail_action_reward
+
 
         result =''
         if self.states[component.type]['state'] ==1:
@@ -261,25 +287,29 @@ class ComputerAssemblyGame:
 
         if last_direction == 'y' or last_direction == '':  # Prioritize x-direction first if last move was y or if starting
             if start_x < target_x:
-                start_x += self.grid_size  # Move right
+                distance_step = min(self.grid_size, target_x-start_x)
+                start_x += distance_step  # Move right
                 step_made = True
                 new_direction = 'x'
             elif start_x > target_x:
-                start_x -= self.grid_size  # Move left
+                distance_step = min(self.grid_size, start_x- target_x)
+                start_x -= distance_step  # Move left
                 step_made = True
                 new_direction = 'x'
         if (start_y < target_y or start_y > target_y) and not step_made:  # Then move in y if x didn't change or was not prioritized
             if start_y < target_y:
-                start_y += self.grid_size  # Move down
+                distance_step = min(self.grid_size, target_y-start_y)
+                start_y += distance_step  # Move down
                 step_made = True
                 new_direction = 'y'
             elif start_y > target_y:
+                distance_step = min(self.grid_size, start_y- target_y)
                 start_y -= self.grid_size  # Move up
                 step_made = True
                 new_direction = 'y'
 
         # Return the updated position, whether a step was made, and the direction of the move
-        return start_x, start_y, 1 if step_made else 0
+        return start_x, start_y, step_made
 
     def initialize_components(self):
         self.components = []
@@ -333,6 +363,7 @@ class ComputerAssemblyGame:
 
 
 
+        executable_tasks = self.get_executable_tasks()
 
     def initialize_hands(self):
         self.hand_x, self.hand_y = 400, 300

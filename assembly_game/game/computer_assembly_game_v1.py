@@ -138,6 +138,7 @@ class ComputerAssemblyGame:
             self.hand_x, self.hand_y, step_made_1 = self.move_towards(
                 self.hand_x, self.hand_y, self.target_x1, self.target_y1, 'y')
             self.total_step += 1
+
             if step_made_1 == 0:
                 break
 

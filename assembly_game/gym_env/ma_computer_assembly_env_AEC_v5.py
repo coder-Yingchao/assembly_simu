@@ -99,6 +99,7 @@ class ComputerAssemblyMultiAgentEnv(AECEnv):
         """
         self._agent_selector = agent_selector(self.agents)
         self.agent_selection = self._agent_selector.next()
+        # self.agent_selection = self._agent_selector.next()
         self.game.reset_game(1)
 
 
@@ -124,6 +125,8 @@ class ComputerAssemblyMultiAgentEnv(AECEnv):
         # collect reward if it is the last agent to act
         if self._agent_selector.is_last():
             # rewards for all agents are placed in the .rewards dictionary
+            # if self.state[self.agents[0]] is None:
+            #     self.state[self.agents[0]] = 0
             reward, terminated = self.game.move_hands_simultaneously(self.state[self.agents[0]]-1, self.state[self.agents[1]]-1)
             self.rewards[self.agents[0]] = reward
             self.rewards[self.agents[1]] = reward
